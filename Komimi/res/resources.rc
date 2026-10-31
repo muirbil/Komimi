@@ -1,0 +1,32 @@
+#pragma code_page(65001)
+#include <winres.h>
+#include "resource.h"
+
+// The first icon in the resources becomes the exe icon in Explorer.
+// To change the picture: python tools/make_icon.py Komimi/res/app.ico my_icon.png
+IDI_APP ICON "app.ico"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,1,0,0
+ PRODUCTVERSION 0,1,0,0
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "FileDescription", "Komimi"
+            VALUE "FileVersion", "0.1.0.0"
+            VALUE "InternalName", "Komimi"
+            VALUE "OriginalFilename", "Komimi.exe"
+            VALUE "ProductName", "Komimi"
+            VALUE "ProductVersion", "0.1.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

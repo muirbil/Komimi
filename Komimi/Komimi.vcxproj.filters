@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{769e1e54-4504-549a-8d8d-c4899ce857ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\app">
+      <UniqueIdentifier>{199a2aa2-cb5d-51c5-8dec-77a18e7bd341}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\device">
+      <UniqueIdentifier>{85115517-0714-5afe-ab58-23708ac54f41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\ui">
+      <UniqueIdentifier>{26c42936-f71e-5dfb-a65a-101c13d08890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{5c7d31ef-7fd7-5d53-92dd-dae54e4d82ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\app">
+      <UniqueIdentifier>{cfc1531e-52a5-5b05-b667-6f77f0a0a4b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\device">
+      <UniqueIdentifier>{f9a7aa6f-8f7a-5b70-ab6f-5c456198e9a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\ui">
+      <UniqueIdentifier>{a56893ee-560e-5ccf-bfbd-763000ac96dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{4f79e6aa-2917-56d9-bb17-994be81343e7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\app\Localization.cpp">
+      <Filter>src\app</Filter>
+    </ClCompile>
+    <ClCompile Include="src\app\main.cpp">
+      <Filter>src\app</Filter>
+    </ClCompile>
+    <ClCompile Include="src\device\Engine.cpp">
+      <Filter>src\device</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\Flyout.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\TrayProvider.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\app\Autostart.h">
+      <Filter>include\app</Filter>
+    </ClInclude>
+    <ClInclude Include="include\app\Localization.h">
+      <Filter>include\app</Filter>
+    </ClInclude>
+    <ClInclude Include="include\app\Log.h">
+      <Filter>include\app</Filter>
+    </ClInclude>
+    <ClInclude Include="include\device\Constants.h">
+      <Filter>include\device</Filter>
+    </ClInclude>
+    <ClInclude Include="include\device\Engine.h">
+      <Filter>include\device</Filter>
+    </ClInclude>
+    <ClInclude Include="include\device\MmaProtocol.h">
+      <Filter>include\device</Filter>
+    </ClInclude>
+    <ClInclude Include="include\device\XiaomiBudsClient.h">
+      <Filter>include\device</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ui\Flyout.h">
+      <Filter>include\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ui\Theme.h">
+      <Filter>include\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ui\TrayProvider.h">
+      <Filter>include\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="res\resource.h">
+      <Filter>res</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\resources.rc">
+      <Filter>res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\app.ico">
+      <Filter>res</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

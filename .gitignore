@@ -1,0 +1,66 @@
+# Build output
+bin/
+obj/
+x64/
+Win32/
+Generated Files/
+*.exe
+*.dll
+*.lib
+*.pdb
+*.ilk
+*.exp
+*.obj
+*.res
+*.ifc
+*.tlog
+*.iobj
+*.ipdb
+
+# NuGet packages (restored on the first build)
+packages/
+
+# Visual Studio: caches and per-user settings
+.vs/
+*.user
+*.suo
+*.aps
+*.VC.db
+*.VC.opendb
+*.ipch
+ipch/
+CppProperties.json
+
+# Other editors and tools
+.vscode/
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+
+# Release archives (attach them to GitHub Releases instead)
+*.zip
+*.7z
+
+# Bluetooth captures: contain device MAC addresses
+*.log
+*.cfa
+*.btsnoop
+btsnoop*
+*.pcap
+*.pcapng
+
+# Vendor files and third-party research: not ours to redistribute
+*.apk
+*.xapk
+*.apks
+*.dex
+decompiled/
+jadx*/
+earbuds-probe/
+jl_auth.py
+
+# Windows
+Thumbs.db
+desktop.ini
