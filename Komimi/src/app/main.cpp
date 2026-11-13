@@ -24,11 +24,12 @@ namespace {
         std::wstring tip = L"Komimi\n";
         tip += BudsConstants::Xiaomi::Buds6Lite::DisplayName;
         tip += L'\n';
+        bool bluetoothOff = state.error == EngineError::BluetoothOff;
         switch (state.link) {
         case LinkState::Connected:    tip += Tr(Str::TipConnected); break;
         case LinkState::Connecting:   tip += Tr(Str::TipConnecting); break;
-        case LinkState::Disconnected: tip += Tr(Str::TipDisconnected); break;
-        case LinkState::NotFound:     tip += Tr(Str::TipNotFound); break;
+        case LinkState::Disconnected: tip += Tr(bluetoothOff ? Str::TipBluetoothOff : Str::TipDisconnected); break;
+        case LinkState::NotFound:     tip += Tr(bluetoothOff ? Str::TipBluetoothOff : Str::TipNotFound); break;
         }
         auto const& left = state.battery.left.percent;
         auto const& right = state.battery.right.percent;
@@ -64,6 +65,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             .onAncLevelSelected = [&](uint8_t level) { engine.SetAncLevel(level); },
             .onEqSelected = [&](XiaomiMma::EqPreset preset) { engine.SetEqPreset(preset); },
             .onReconnect = [&] { engine.Reconnect(); },
+            .onDisconnect = [&] { engine.Disconnect(); },
         })) {
         return 1;
     }

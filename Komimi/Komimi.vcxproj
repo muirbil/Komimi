@@ -63,7 +63,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>windowsapp.lib;d2d1.lib;dwrite.lib;dwmapi.lib;shcore.lib;CoreMessaging.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>windowsapp.lib;d2d1.lib;dwrite.lib;dwmapi.lib;shcore.lib;CoreMessaging.lib;cfgmgr32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
@@ -87,6 +87,7 @@
   <ItemGroup>
     <ClCompile Include="src\app\Localization.cpp" />
     <ClCompile Include="src\app\main.cpp" />
+    <ClCompile Include="src\device\BluetoothAudio.cpp" />
     <ClCompile Include="src\device\Engine.cpp" />
     <ClCompile Include="src\ui\Flyout.cpp" />
     <ClCompile Include="src\ui\TrayProvider.cpp" />
@@ -95,6 +96,7 @@
     <ClInclude Include="include\app\Autostart.h" />
     <ClInclude Include="include\app\Localization.h" />
     <ClInclude Include="include\app\Log.h" />
+    <ClInclude Include="include\device\BluetoothAudio.h" />
     <ClInclude Include="include\device\Constants.h" />
     <ClInclude Include="include\device\Engine.h" />
     <ClInclude Include="include\device\MmaProtocol.h" />

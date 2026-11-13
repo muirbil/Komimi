@@ -10,11 +10,13 @@ namespace {
         L"Connecting…",
         L"Not found · retry",
         L"Disconnected · retry",
+        L"Bluetooth off · turn on",
 
         L"Connected",
         L"Connecting…",
         L"Disconnected",
         L"Earbuds not found",
+        L"Bluetooth is off",
 
         L"Left",
         L"Right",
@@ -49,6 +51,9 @@ namespace {
         L"Treble",
         L"Custom",
 
+        L"Connect",
+        L"Disconnect",
+
         L"Reconnect",
         L"Start with Windows",
         L"Language",
@@ -61,11 +66,13 @@ namespace {
         L"Подключение…",
         L"Не найдены · повторить",
         L"Отключено · повторить",
+        L"Bluetooth выкл. · включить",
 
         L"Подключено",
         L"Подключение…",
         L"Отключено",
         L"Наушники не найдены",
+        L"Bluetooth выключен",
 
         L"Левый",
         L"Правый",
@@ -100,6 +107,9 @@ namespace {
         L"Высокие",
         L"Свой",
 
+        L"Подключить",
+        L"Отключить",
+
         L"Переподключить",
         L"Запускать вместе с Windows",
         L"Язык",
@@ -112,11 +122,13 @@ namespace {
         L"接続中…",
         L"見つかりません · 再試行",
         L"切断されました · 再試行",
+        L"Bluetooth オフ · オンにする",
 
         L"接続済み",
         L"接続中…",
         L"切断されました",
         L"イヤホンが見つかりません",
+        L"Bluetooth がオフです",
 
         L"左",
         L"右",
@@ -150,6 +162,9 @@ namespace {
         L"低音",
         L"高音",
         L"カスタム",
+
+        L"接続",
+        L"切断",
 
         L"再接続",
         L"Windows の起動時に開始",

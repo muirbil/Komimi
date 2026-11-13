@@ -1,17 +1,39 @@
 #include <chrono>
 #include "device/Engine.h"
+#include "device/BluetoothAudio.h"
 #include "app/Log.h"
 
 using namespace std::chrono_literals;
 using BudsConstants::Xiaomi::Buds6Lite::AncModes;
 using winrt::Windows::Devices::Bluetooth::BluetoothConnectionStatus;
 using winrt::Windows::Devices::Bluetooth::BluetoothDevice;
+using winrt::Windows::Devices::Radios::Radio;
+using winrt::Windows::Devices::Radios::RadioAccessStatus;
+using winrt::Windows::Devices::Radios::RadioKind;
+using winrt::Windows::Devices::Radios::RadioState;
 
 namespace {
     // If the earbuds do not answer a mode change within this time, treat it as failed
     constexpr auto kAncResponseTimeout = 3s;
     // Windows reports the connection before the earbuds are ready to accept RFCOMM
     constexpr auto kAutoConnectDelay = 1500ms;
+    // A freshly turned on adapter needs a moment before it can open connections
+    constexpr auto kBluetoothStartDelay = 2s;
+
+    // nullptr if there is no Bluetooth adapter (or the Bluetooth service is not running)
+    winrt::Windows::Foundation::IAsyncOperation<Radio> FindBluetoothRadioAsync() {
+        for (auto const& radio : co_await Radio::GetRadiosAsync()) {
+            if (radio.Kind() == RadioKind::Bluetooth) co_return radio;
+        }
+        co_return nullptr;
+    }
+
+    // The same as the Bluetooth toggle in quick settings. Fails if "Let apps control device radios"
+    // is off in Windows privacy settings or the adapter is disabled in Device Manager.
+    winrt::Windows::Foundation::IAsyncOperation<bool> TurnOnAsync(Radio radio) {
+        if (co_await Radio::RequestAccessAsync() != RadioAccessStatus::Allowed) co_return false;
+        co_return co_await radio.SetStateAsync(RadioState::On) == RadioAccessStatus::Allowed;
+    }
 }
 
 Engine::Engine(winrt::Windows::System::DispatcherQueue uiQueue)
@@ -89,7 +111,7 @@ Engine::Engine(winrt::Windows::System::DispatcherQueue uiQueue)
     m_autoConnect.Interval(kAutoConnectDelay);
     m_autoConnect.IsRepeating(false);
     m_autoConnect.Tick([this](auto&&, auto&&) {
-        if (m_state.link == LinkState::NotFound || m_state.link == LinkState::Disconnected) ConnectAsync();
+        if (CanAutoConnect()) ConnectAsync();
     });
 
     m_ancTimeout.Tick([this](auto&&, auto&&) {
@@ -115,6 +137,7 @@ Engine::~Engine() {
     m_eqTimeout.Stop();
     m_autoConnect.Stop();
     if (m_device) m_device.ConnectionStatusChanged(m_deviceStatusToken);
+    if (m_radio) m_radio.StateChanged(m_radioStateToken);
     m_client->Close();
 }
 
@@ -123,12 +146,69 @@ void Engine::Initialize() {
 }
 
 void Engine::Reconnect() {
-    ConnectAsync();
+    m_userDisconnected = false;
+    ConnectAsync(true);
 }
 
-winrt::fire_and_forget Engine::ConnectAsync() {
+// Like Disconnect in Windows Bluetooth settings: the control channel and the audio go,
+// the earbuds stay paired and wait for Connect
+void Engine::Disconnect() {
+    if (m_state.link != LinkState::Connected) return;
+    Log(L"Disconnecting on request");
+    m_userDisconnected = true;
+    m_autoConnect.Stop();
+    m_client->Close(); // does not call OnDisconnected
+    try {
+        BluetoothAudio::Disconnect(m_deviceAddress);
+    }
+    catch (winrt::hresult_error const& ex) {
+        Log(L"Bluetooth audio disconnect error: {}", ex.message().c_str());
+    }
+    SetLink(LinkState::Disconnected);
+}
+
+bool Engine::CanAutoConnect() const {
+    return !m_userDisconnected && (m_state.link == LinkState::NotFound || m_state.link == LinkState::Disconnected);
+}
+
+winrt::fire_and_forget Engine::ConnectAsync(bool userRequest) {
     if (m_state.link == LinkState::Connecting) co_return;
+    if (m_state.error == EngineError::BluetoothOff) m_state.error = EngineError::None;
     SetLink(LinkState::Connecting);
+
+    if (!m_radio) {
+        try {
+            m_radio = co_await FindBluetoothRadioAsync();
+        }
+        catch (winrt::hresult_error const& ex) {
+            Log(L"Bluetooth adapter lookup error: {}", ex.message().c_str());
+        }
+        co_await winrt::resume_foreground(m_uiQueue);
+        if (m_radio) WatchRadio();
+    }
+
+    // With Bluetooth off there is nothing to connect to. Only a request from the user turns it on:
+    // the app switching a radio on by itself (at startup, on auto-reconnect) would be a surprise.
+    if (m_radio && m_radio.State() != RadioState::On) {
+        bool on = false;
+        if (userRequest) {
+            Log(L"Bluetooth is off, turning it on");
+            try {
+                on = co_await TurnOnAsync(m_radio);
+                if (on) co_await winrt::resume_after(kBluetoothStartDelay);
+            }
+            catch (winrt::hresult_error const& ex) {
+                Log(L"Bluetooth turn on error: {}", ex.message().c_str());
+            }
+            co_await winrt::resume_foreground(m_uiQueue);
+        }
+        if (!on) {
+            Log(L"Bluetooth is off");
+            m_state.error = EngineError::BluetoothOff;
+            SetLink(LinkState::NotFound);
+            co_return;
+        }
+    }
 
     // Keep looking among paired devices until found: the earbuds may be paired after startup
     if (!m_deviceAddress) {
@@ -149,6 +229,20 @@ winrt::fire_and_forget Engine::ConnectAsync() {
         Log(L"Found earbuds: {:012X}", found);
         m_deviceAddress = found;
         WatchDeviceAsync();
+    }
+
+    // After Disconnect (ours or in Windows settings) Windows does not bring the audio back by itself.
+    // Ask it to, the same as Connect in Bluetooth settings; for connected earbuds this changes nothing.
+    if (userRequest && !(m_device && m_device.ConnectionStatus() == BluetoothConnectionStatus::Connected)) {
+        try {
+            if (BluetoothAudio::Connect(m_deviceAddress) > 0) {
+                co_await winrt::resume_after(kAutoConnectDelay);
+                co_await winrt::resume_foreground(m_uiQueue);
+            }
+        }
+        catch (winrt::hresult_error const& ex) {
+            Log(L"Bluetooth audio connect error: {}", ex.message().c_str());
+        }
     }
 
     bool ok = false;
@@ -192,8 +286,32 @@ winrt::fire_and_forget Engine::WatchDeviceAsync() {
     m_deviceStatusToken = m_device.ConnectionStatusChanged([queue, this](BluetoothDevice const& sender, auto&&) {
         if (sender.ConnectionStatus() != BluetoothConnectionStatus::Connected) return;
         queue.TryEnqueue([this] {
-            if (m_state.link != LinkState::NotFound && m_state.link != LinkState::Disconnected) return;
+            if (!CanAutoConnect()) return;
             Log(L"Earbuds connected to Windows, connecting RFCOMM");
+            m_autoConnect.Start();
+        });
+    });
+}
+
+// Bluetooth switched outside the app (quick settings etc.): say so when it goes off,
+// connect without waiting for a click when it comes back
+void Engine::WatchRadio() {
+    auto queue = m_uiQueue;
+    m_radioStateToken = m_radio.StateChanged([queue, this](Radio const& sender, auto&&) {
+        bool on = sender.State() == RadioState::On;
+        queue.TryEnqueue([this, on] {
+            if (!on) {
+                if (m_state.link == LinkState::Connecting) return; // our own attempt deals with it
+                m_state.error = EngineError::BluetoothOff;
+                NotifyChanged();
+                return;
+            }
+            if (m_state.error == EngineError::BluetoothOff) {
+                m_state.error = EngineError::None;
+                NotifyChanged();
+            }
+            if (!CanAutoConnect()) return;
+            Log(L"Bluetooth turned on, connecting");
             m_autoConnect.Start();
         });
     });

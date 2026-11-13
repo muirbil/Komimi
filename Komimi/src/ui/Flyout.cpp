@@ -32,7 +32,8 @@ namespace {
     constexpr float kLevelBottom = kLevelTop + kLevelRows * kLevelChipHeight + (kLevelRows - 1) * kLevelGap;
     constexpr float kEqSectionTop = kLevelBottom + 12.f;
     constexpr float kEqTop = kEqSectionTop + 24.f;
-    constexpr float kHeight = kEqTop + kSelectorHeight + kPadding;
+    constexpr float kButtonTop = kEqTop + kSelectorHeight + 12.f, kButtonHeight = 32.f;
+    constexpr float kHeight = kButtonTop + kButtonHeight + kPadding;
     constexpr float kScreenMargin = 12.f; // gap to the taskbar and the screen edge
 
     // If the window hid because of a click on the tray icon, that same click must not reopen it
@@ -99,6 +100,11 @@ namespace {
         float width = (kWidth - 2 * kPadding - 2 * kSelectorInset) / count;
         return D2D1::RectF(left + width * index, top + kSelectorInset,
             left + width * (index + 1), top + kSelectorHeight - kSelectorInset);
+    }
+
+    // Connect / Disconnect under the equalizer
+    D2D1_RECT_F ConnectionButtonRect() {
+        return D2D1::RectF(kPadding, kButtonTop, kWidth - kPadding, kButtonTop + kButtonHeight);
     }
 
     bool Contains(D2D1_RECT_F const& rect, float x, float y) {
@@ -376,6 +382,7 @@ void Flyout::Paint() {
         DrawAncSelector();
         DrawLevelSelector();
         DrawEqSelector();
+        DrawConnectionButton();
         if (m_target->EndDraw() == D2DERR_RECREATE_TARGET) {
             m_brush = nullptr;
             m_target = nullptr;
@@ -388,6 +395,7 @@ void Flyout::Paint() {
 void Flyout::DrawHeader() {
     std::wstring_view statusText;
     D2D1_COLOR_F dotColor{};
+    bool bluetoothOff = m_state.error == EngineError::BluetoothOff;
     switch (m_state.link) {
     case LinkState::Connected:
         statusText = Tr(Str::StatusConnected);
@@ -398,11 +406,11 @@ void Flyout::DrawHeader() {
         dotColor = m_palette.warning;
         break;
     case LinkState::NotFound:
-        statusText = Tr(Str::StatusNotFoundRetry);
+        statusText = Tr(bluetoothOff ? Str::StatusBluetoothOff : Str::StatusNotFoundRetry);
         dotColor = m_palette.bad;
         break;
     case LinkState::Disconnected:
-        statusText = Tr(Str::StatusDisconnectedRetry);
+        statusText = Tr(bluetoothOff ? Str::StatusBluetoothOff : Str::StatusDisconnectedRetry);
         dotColor = m_palette.textDisabled;
         break;
     }
@@ -498,6 +506,26 @@ void Flyout::DrawAncSelector() {
 void Flyout::DrawEqSelector() {
     DrawSectionHeader(kEqSectionTop, Str::Equalizer, m_state.error == EngineError::EqWriteFailed, Str::ErrorEqWrite);
     DrawSegmented(kEqTop, kEqLabels, IndexOf(kEqPresets, m_state.eq), HitEqBase, m_state.eqPending);
+}
+
+void Flyout::DrawConnectionButton() {
+    auto rect = ConnectionButtonRect();
+    bool connected = m_state.link == LinkState::Connected;
+    bool enabled = IsEnabled(HitConnection);
+    bool hot = enabled && m_hover == HitConnection;
+
+    // Without a link, connecting is the one useful action, so it gets the accent colour
+    D2D1_COLOR_F textColor = m_palette.text;
+    if (enabled && !connected) {
+        FillRound(rect, 6.f, hot ? WithAlpha(m_palette.accent, 0.85f) : m_palette.accent);
+        textColor = m_palette.onAccent;
+    }
+    else {
+        FillRound(rect, 6.f, hot ? m_palette.hover : m_palette.card);
+        StrokeRound(rect, 6.f, m_palette.border);
+        if (!enabled) textColor = m_palette.textDisabled;
+    }
+    DrawLabel(Tr(connected ? Str::ButtonDisconnect : Str::ButtonConnect), m_segmentFormat.get(), rect, textColor);
 }
 
 void Flyout::DrawSectionHeader(float top, Str title, bool showError, Str error) {
@@ -606,6 +634,7 @@ int Flyout::HitTest(LPARAM lParam) const {
         if (Contains(SegmentRect(kEqTop, i, kEqPresets.size()), x, y)) return HitEqBase + static_cast<int>(i);
     }
     if (Contains(m_statusRect, x, y)) return HitStatus;
+    if (Contains(ConnectionButtonRect(), x, y)) return HitConnection;
     auto levels = LevelsFor(m_state.anc);
     for (size_t i = 0; i < levels.size(); ++i) {
         if (Contains(LevelChipRect(i, levels.size()), x, y)) return HitLevelBase + static_cast<int>(i);
@@ -621,12 +650,16 @@ bool Flyout::IsEnabled(int hit) const {
     if (inRange(HitLevelBase, LevelsFor(m_state.anc).size())) return connected && !m_state.ancPending;
     if (inRange(HitEqBase, kEqPresets.size())) return connected && !m_state.eqPending;
     if (hit == HitStatus) return m_state.link == LinkState::Disconnected || m_state.link == LinkState::NotFound;
+    if (hit == HitConnection) return m_state.link != LinkState::Connecting;
     return false;
 }
 
 void Flyout::Activate(int hit) {
     if (!IsEnabled(hit)) return;
-    if (hit == HitStatus) {
+    if (hit == HitConnection && m_state.link == LinkState::Connected) {
+        if (m_callbacks.onDisconnect) m_callbacks.onDisconnect();
+    }
+    else if (hit == HitStatus || hit == HitConnection) {
         if (m_callbacks.onReconnect) m_callbacks.onReconnect();
     }
     else if (hit >= HitEqBase) {

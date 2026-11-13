@@ -15,11 +15,13 @@ enum class Str {
     StatusConnecting,
     StatusNotFoundRetry,
     StatusDisconnectedRetry,
+    StatusBluetoothOff,
 
     TipConnected,
     TipConnecting,
     TipDisconnected,
     TipNotFound,
+    TipBluetoothOff,
 
     BatteryLeft,
     BatteryRight,
@@ -55,6 +57,9 @@ enum class Str {
     EqBass,
     EqTreble,
     EqCustom,
+
+    ButtonConnect,
+    ButtonDisconnect,
 
     MenuReconnect,
     MenuStartWithWindows,

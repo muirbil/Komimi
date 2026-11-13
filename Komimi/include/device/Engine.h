@@ -5,6 +5,7 @@
 #include <optional>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Devices.Bluetooth.h>
+#include <winrt/Windows.Devices.Radios.h>
 #include <winrt/Windows.System.h>
 #include "device/XiaomiBudsClient.h"
 
@@ -20,6 +21,7 @@ enum class EngineError {
     None,
     AncWriteFailed,
     EqWriteFailed,
+    BluetoothOff, // Bluetooth is off in Windows (turned off outside the app or could not be turned on)
 };
 
 // Stored levels per mode, indexed by AncModes. The earbuds remember a separate level for each mode.
@@ -50,7 +52,8 @@ public:
     Engine& operator=(Engine const&) = delete;
 
     void Initialize(); // finds the paired earbuds and connects to them
-    void Reconnect();
+    void Reconnect();  // asked by the user: also turns Bluetooth on and brings the earbuds' audio back
+    void Disconnect(); // disconnects the earbuds from Windows and stops reconnecting until Reconnect()
     void SetAncMode(BudsConstants::Xiaomi::Buds6Lite::AncModes mode);
     void SetAncLevel(uint8_t level); // for the current mode (noise cancelling or transparency)
     void SetEqPreset(XiaomiMma::EqPreset preset);
@@ -61,8 +64,11 @@ public:
     std::function<void()> onStateChanged;
 
 private:
-    winrt::fire_and_forget ConnectAsync();
+    // userRequest: the user asked to connect, so Bluetooth and the earbuds' audio may be turned on
+    winrt::fire_and_forget ConnectAsync(bool userRequest = false);
     winrt::fire_and_forget WatchDeviceAsync();
+    void WatchRadio();
+    bool CanAutoConnect() const;
     void SetLink(LinkState link);
     void FinishAncRequest(bool ok);
     void FinishEqRequest(bool ok);
@@ -79,11 +85,17 @@ private:
     AncLevels m_confirmedLevels;
     std::optional<XiaomiMma::EqPreset> m_confirmedEq;
     bool m_retriedConnect = false;
+    bool m_userDisconnected = false; // Disconnect() was pressed: no automatic reconnects
 
     // We watch the classic Bluetooth connection to connect to the earbuds
     // as soon as Windows connects them (taken out of the case)
     winrt::Windows::Devices::Bluetooth::BluetoothDevice m_device{ nullptr };
     winrt::event_token m_deviceStatusToken{};
+
+    // The Bluetooth adapter: to turn it on and to connect as soon as it is turned on.
+    // nullptr = not looked up yet, or there is no adapter
+    winrt::Windows::Devices::Radios::Radio m_radio{ nullptr };
+    winrt::event_token m_radioStateToken{};
 
     std::shared_ptr<XiaomiBudsClient> m_client = std::make_shared<XiaomiBudsClient>();
 };

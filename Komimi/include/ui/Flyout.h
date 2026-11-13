@@ -20,7 +20,8 @@ public:
         std::function<void(BudsConstants::Xiaomi::Buds6Lite::AncModes)> onAncSelected;
         std::function<void(uint8_t level)> onAncLevelSelected; // level for the current mode
         std::function<void(XiaomiMma::EqPreset)> onEqSelected;
-        std::function<void()> onReconnect;
+        std::function<void()> onReconnect;  // the status in the header or the Connect button
+        std::function<void()> onDisconnect; // the Disconnect button
     };
 
     Flyout() = default;
@@ -48,8 +49,9 @@ private:
     };
 
     // Clickable areas: HitAncBase + i = ANC mode segment, HitStatus = status,
-    // HitLevelBase + i = chip of level i for the current mode, HitEqBase + i = EQ preset
-    enum Hit : int { HitNone = -1, HitAncBase = 0, HitStatus = 3, HitLevelBase = 10, HitEqBase = 20 };
+    // HitLevelBase + i = chip of level i for the current mode, HitEqBase + i = EQ preset,
+    // HitConnection = the Connect / Disconnect button
+    enum Hit : int { HitNone = -1, HitAncBase = 0, HitStatus = 3, HitLevelBase = 10, HitEqBase = 20, HitConnection = 30 };
 
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     LRESULT HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -68,6 +70,7 @@ private:
     void DrawAncSelector();
     void DrawLevelSelector();
     void DrawEqSelector();
+    void DrawConnectionButton();
     void DrawSectionHeader(float top, Str title, bool showError, Str error);
     // Segmented control: a track with segments, the selected one is filled with the accent colour
     void DrawSegmented(float top, std::span<Str const> labels, std::optional<size_t> selected, int hitBase, bool pending);
