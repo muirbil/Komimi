@@ -21,10 +21,18 @@ earbuds somewhere else.
 - Equalizer presets: Balanced, Vocal, Bass, Treble, Custom
 - Stays in sync when you switch modes with the earbud gesture
 - Finds the paired earbuds automatically and reconnects when you take them out of the case
+- Connect / Disconnect button: disconnects the earbuds from Windows like the Bluetooth settings
+  do, and turns Bluetooth on when you connect
 - Flyout next to the tray icon in the style of Windows 11, light and dark theme, system accent
   colour, per-monitor DPI
 - Start with Windows (shares the switch with Task Manager → Startup apps)
 - English, Russian and Japanese
+
+## Download
+
+Get `Komimi-vX.Y.Z-win-x64.zip` from [Releases](https://github.com/muirbil/Komimi/releases),
+unpack it anywhere and run `Komimi.exe`. No installer or extra runtimes needed. The exe is not
+code-signed, so SmartScreen may warn you: choose "More info", then "Run anyway".
 
 ## Requirements
 
@@ -41,6 +49,12 @@ Only one program can talk to the earbuds at a time.
 
 - **Left click** the tray icon to open the flyout. Click outside it or press Esc to close.
 - **Right click** for the menu: Reconnect, Start with Windows, Language, Exit.
+- **Disconnect** (under the equalizer) disconnects the earbuds from Windows, sound included, and
+  the app leaves them alone until you press **Connect**.
+- **Connect** and **Reconnect** turn Bluetooth on if it is off. At startup the app never turns
+  Bluetooth on by itself; if it is off, the flyout says so, and the app connects as soon as you
+  turn it on. Turning Bluetooth on from the app needs apps to be allowed to control radios
+  (*Settings → Privacy & security → Radios*).
 - The icon turns grey while the earbuds are not connected.
 
 ## Building
@@ -65,7 +79,8 @@ the Output window in Visual Studio or use
 Komimi/
   include/ src/
     app/      entry point, localization, autostart, logging
-    device/   protocol (MmaProtocol.h), RFCOMM client, state engine
+    device/   protocol (MmaProtocol.h), RFCOMM client, state engine,
+              Bluetooth audio connect/disconnect
     ui/       tray icon, flyout (Direct2D / DirectWrite), theme
   res/        icon and version resources
 docs/         protocol description, screenshot
@@ -74,6 +89,9 @@ docs/         protocol description, screenshot
 - **`include/device/MmaProtocol.h`** — frame building/parsing and payload decoding in plain
   C++17 without any Windows dependencies. Copy it if you need the protocol elsewhere.
 - **`include/device/XiaomiBudsClient.h`** — C++/WinRT RFCOMM client on top of it.
+- **`src/device/BluetoothAudio.cpp`** — connects and disconnects a Bluetooth device's audio
+  profiles through the `KSPROPSETID_BtAudio` requests, the same way the Windows Bluetooth
+  settings do. Not specific to these earbuds.
 
 No GUI framework: the flyout is drawn with Direct2D and DirectWrite, the rest is plain Win32.
 
